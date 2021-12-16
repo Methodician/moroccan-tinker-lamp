@@ -27,7 +27,7 @@ Adafruit_NeoPixel strip(PIXEL_COUNT, PIXEL_PIN, NEO_GRB + NEO_KHZ800);
 int     mode     = 0;    // Currently-active mode, 0-9
 boolean oldColorState      = HIGH;
 boolean oldBrightnessState = HIGH;
-uint8_t brightness         = 0;
+uint8_t brightness         = 25; // Invisible below 25 (max = 255)
 uint16_t hue               = 0;
 
 
@@ -36,7 +36,7 @@ void setup() {
   pinMode(BRIGHTNESS_BTN_PIN, INPUT_PULLUP);
   
   strip.begin();           // INITIALIZE NeoPixel strip object (REQUIRED)
-  strip.show();            // Turn OFF all pixels ASAP
+  setHue();            // Turn OFF all pixels ASAP
 }
 
 void loop() {
@@ -57,11 +57,17 @@ void watchBrightnessButton () {
       if (brightness < 255) {
         brightness += 1;
       } else {
-        brightness = 1;
+        brightness = 25;
       }
-      setBrightness(brightness);
+
+      setHue();
     }
   }
+}
+
+void setBrightness() {
+  strip.setBrightness(brightness); 
+  strip.show();
 }
 
 void watchColorButton () {
@@ -74,49 +80,25 @@ void watchColorButton () {
     // Check if button is still low after debounce.
     newColorState = digitalRead(COLOR_BTN_PIN);
     if(newColorState == LOW) {      // Yes, still low
-      if(++mode > 8) mode = 0; // Advance to next mode, wrap around after #8
-      switch(mode) {           // Start the new animation...
-        case 0:
-          setColor(strip.Color(0, 0, 0));    // Black/off
-          break;
-        case 1:
-          setColor(strip.Color(255,50,0,255)); // aiming for amber
-          break;
-        case 2:
-          setColor(strip.Color(255,50,0)); // aiming for amber
-          break;
-        case 3:
-          setColor(strip.Color(255,50,255));
-          break;
-        case 4:
-          setColor(strip.Color(255,0,255));
-          break;
-        case 5:
-          setColor(strip.Color(0,255,0)); // Green
-          break;
-        case 6:
-          setColor(strip.Color(0,0,255)); // Blue
-          break;
-        case 7:
-          setColor(strip.Color(255,0,0)); // Red
-          break;
-        case 8:
-          setColor(strip.Color(255,255,255)); // White
-          break;
+    // Color wheel has a range of 65536 but it's OK if we roll over
+      if(hue < 65536) {
+        hue += 256;
+      } else {
+        hue = 0;
       }
+      
+      setHue();
     }
   }
+}
 
-  oldColorState = newColorState;
+void setHue () {
+   strip.rainbow(hue, 1, 255, brightness, true);
+   strip.show();
 }
 
 void setColor(uint32_t color) {
   strip.setPixelColor(0, color);
-  strip.show();
-}
-
-void setBrightness(uint8_t brightness) {
-  strip.setBrightness(brightness); //(max = 255)
   strip.show();
 }
 
