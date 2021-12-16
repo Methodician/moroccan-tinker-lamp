@@ -25,6 +25,7 @@ Adafruit_NeoPixel strip(PIXEL_COUNT, PIXEL_PIN, NEO_GRB + NEO_KHZ800);
 //   NEO_RGBW    Pixels are wired for RGBW bitstream (NeoPixel RGBW products)
 
 boolean oldColorState = HIGH;
+boolean oldBrightnessState = HIGH;
 int     mode     = 0;    // Currently-active mode, 0-9
 
 
@@ -39,50 +40,53 @@ void setup() {
 
 void loop() {
   watchColorButton();
+  watchBrightnessButton();
 }
 
 void watchBrightnessButton () {
   boolean newBrightnessState = digitalRead(BRIGHTNESS_BTN_PIN);
 
   // Check if button was pressed
-  if((newBrightnessStaterState == LOW) && (oldColorState == HIGH)){
+  if((newBrightnessState == LOW) && (oldBrightnessState == HIGH)){
     // Short delay to debounce button.
     delay(20);
     // Check if button is still low after debounce.8
-    newBrightnessState = digitalRead(COLOR_BTN_PIN);
-    if(newColorState == LOW) {      // Yes, still low
-      if(++mode > 4) mode = 0; // Advance to next mode, wrap around after #4
+    newBrightnessState = digitalRead(BRIGHTNESS_BTN_PIN);
+    if(newBrightnessState == LOW) {      // Yes, still low
+      if(++mode > 8) mode = 0; // Advance to next mode, wrap around after #4
       switch(mode) {           // Start the new animation...
         case 0:
-          setColorAndBrightness(strip.Color(  0,   0,   0), 0);    // Black/off
+          setBrightness(0);    // Black/off
           break;
         case 1:
-          setColorAndBrightness(strip.Color(255,50,0,255), 30); // aiming for amber
+          setBrightness(30); // aiming for amber
           break;
         case 2:
-          setColorAndBrightness(strip.Color(255,50,0), 80); // aiming for amber
+          setBrightness(80); // aiming for amber
           break;
         case 3:
-          setColorAndBrightness(strip.Color(255,50,0), 255); // aiming for amber
+          setBrightness(255); // aiming for amber
           break;
         case 4:
-          setColorAndBrightness(strip.Color(255,0,0), 190); // Red
+          setBrightness(190); // Red
           break;
         case 5:
-          setColorAndBrightness(strip.Color(0,255,0), 190); // Green
+          setBrightness(190); // Green
           break;
         case 6:
-          setColorAndBrightness(strip.Color(0,0,255), 190); // Blue
+          setBrightness(190); // Blue
           break;
         case 7:
-          setColorAndBrightness(strip.Color(255,255,255), 50); // White
+          setBrightness(50); // White
           break;
         case 8:
-          setColorAndBrightness(strip.Color(255,255,255), 255); // White
+          setBrightness(255); // White
           break;
       }
     }
   }
+
+  oldBrightnessState = newBrightnessState;
 }
 
 void watchColorButton () {
@@ -98,31 +102,31 @@ void watchColorButton () {
       if(++mode > 8) mode = 0; // Advance to next mode, wrap around after #8
       switch(mode) {           // Start the new animation...
         case 0:
-          setColorAndBrightness(strip.Color(  0,   0,   0), 0);    // Black/off
+          setColor(strip.Color(0, 0, 0));    // Black/off
           break;
         case 1:
-          setColorAndBrightness(strip.Color(255,50,0,255), 30); // aiming for amber
+          setColor(strip.Color(255,50,0,255)); // aiming for amber
           break;
         case 2:
-          setColorAndBrightness(strip.Color(255,50,0), 80); // aiming for amber
+          setColor(strip.Color(255,50,0)); // aiming for amber
           break;
         case 3:
-          setColorAndBrightness(strip.Color(255,50,0), 255); // aiming for amber
+          setColor(strip.Color(255,50,255));
           break;
         case 4:
-          setColorAndBrightness(strip.Color(255,0,0), 190); // Red
+          setColor(strip.Color(255,0,255));
           break;
         case 5:
-          setColorAndBrightness(strip.Color(0,255,0), 190); // Green
+          setColor(strip.Color(0,255,0)); // Green
           break;
         case 6:
-          setColorAndBrightness(strip.Color(0,0,255), 190); // Blue
+          setColor(strip.Color(0,0,255)); // Blue
           break;
         case 7:
-          setColorAndBrightness(strip.Color(255,255,255), 50); // White
+          setColor(strip.Color(255,0,0)); // Red
           break;
         case 8:
-          setColorAndBrightness(strip.Color(255,255,255), 255); // White
+          setColor(strip.Color(255,255,255)); // White
           break;
       }
     }
@@ -131,7 +135,15 @@ void watchColorButton () {
   oldColorState = newColorState;
 }
 
+void setColor(uint32_t color) {
+  strip.setPixelColor(0, color);
+  strip.show();
+}
 
+void setBrightness(uint8_t brightness) {
+  strip.setBrightness(brightness); //(max = 255)
+  strip.show();
+}
 
 void setColorAndBrightness(uint32_t color, int brightness){
   strip.setPixelColor(0, color);
