@@ -27,6 +27,8 @@ Adafruit_NeoPixel strip(PIXEL_COUNT, PIXEL_PIN, NEO_GRB + NEO_KHZ800);
 int     mode     = 0;    // Currently-active mode, 0-9
 boolean oldColorState      = HIGH;
 boolean oldBrightnessState = HIGH;
+boolean oldComboState [2] = { HIGH, HIGH };
+
 uint8_t brightness         = 25; // Invisible below 25 (max = 255)
 uint16_t hue               = 0;
 
@@ -42,13 +44,35 @@ void setup() {
 void loop() {
   watchColorButton();
   watchBrightnessButton();
+  watchComboPress();
+}
+
+void watchComboPress () {
+  boolean newComboState [2] = { digitalRead(BRIGHTNESS_BTN_PIN), digitalRead(COLOR_BTN_PIN)};
+
+  if((newComboState == { LOW, LOW }) && (oldComboState == { HIGH, HIGH })) {
+    delay(20);
+
+    newComboState = { digitalRead(BRIGHTNESS_BTN_PIN), digitalRead(COLOR_BTN_PIN)};
+
+    if(newComboState == { LOW, LOW}) {
+      if(strip.getBrightness() == 0) {
+        strip.setBrightness(25);
+      } else {
+        strip.setBrightness(0);
+      }
+        strip.show();
+    }
+
+  oldComboState = newComboState;
+  }
 }
 
 void watchBrightnessButton () {
   boolean newBrightnessState = digitalRead(BRIGHTNESS_BTN_PIN);
 
   // Check if button was pressed
-  if((newBrightnessState == LOW) && (oldBrightnessState == HIGH)){
+  if((newBrightnessState == LOW) && (oldBrightnessState == HIGH)) {
     // Short delay to debounce button.
     delay(20);
     // Check if button is still low after debounce.8
@@ -71,10 +95,10 @@ void setBrightness() {
 }
 
 void watchColorButton () {
-    boolean newColorState = digitalRead(COLOR_BTN_PIN);
+  boolean newColorState = digitalRead(COLOR_BTN_PIN);
 
   // Check if button was pressed
-  if((newColorState == LOW) && (oldColorState == HIGH)){
+  if((newColorState == LOW) && (oldColorState == HIGH)) {
     // Short delay to debounce button.
     delay(20);
     // Check if button is still low after debounce.
