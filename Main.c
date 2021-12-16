@@ -41,7 +41,7 @@ void loop() {
   watchColorButton();
 }
 
-void watchBrightnessButton() {
+void watchBrightnessButton () {
   boolean newBrightnessState = digitalRead(BRIGHTNESS_BTN_PIN);
 
   // Check if button was pressed
@@ -85,7 +85,7 @@ void watchBrightnessButton() {
   }
 }
 
-void watchButton() {
+void watchColorButton () {
     boolean newColorState = digitalRead(COLOR_BTN_PIN);
 
   // Check if button was pressed
@@ -128,7 +128,7 @@ void watchButton() {
     }
   }
 
-  oldColorState = newColorState;555
+  oldColorState = newColorState;
 }
 
 
@@ -141,13 +141,13 @@ void setColorAndBrightness(uint32_t color, int brightness){
 
 // The below seem to block use of the button...
 
-//void colorCycle(int wait, uint8_t brightness) {
+// void colorCycle(int wait, uint8_t brightness) {
 //  for(long color = 0; color < 5*65536; color += 256) {
 //    strip.rainbow(color, 9999, 255, brightness, true);
 //    strip.show();
 //    delay(wait);
 //  }  
-//}
+// }
 
 //// Rainbow cycle along whole strip. Pass delay time (in ms) between frames.
 //void rainbow(int wait) {
