@@ -24,10 +24,11 @@ Adafruit_NeoPixel strip(PIXEL_COUNT, PIXEL_PIN, NEO_GRB + NEO_KHZ800);
 //   NEO_RGB     Pixels are wired for RGB bitstream (v1 FLORA pixels, not v2)
 //   NEO_RGBW    Pixels are wired for RGBW bitstream (NeoPixel RGBW products)
 
-boolean oldColorState = HIGH;
-boolean oldBrightnessState = HIGH;
 int     mode     = 0;    // Currently-active mode, 0-9
-
+boolean oldColorState      = HIGH;
+boolean oldBrightnessState = HIGH;
+uint8_t brightness         = 0;
+uint16_t hue               = 0;
 
 
 void setup() {
@@ -52,41 +53,15 @@ void watchBrightnessButton () {
     delay(20);
     // Check if button is still low after debounce.8
     newBrightnessState = digitalRead(BRIGHTNESS_BTN_PIN);
-    if(newBrightnessState == LOW) {      // Yes, still low
-      if(++mode > 8) mode = 0; // Advance to next mode, wrap around after #4
-      switch(mode) {           // Start the new animation...
-        case 0:
-          setBrightness(0);    // Black/off
-          break;
-        case 1:
-          setBrightness(30); // aiming for amber
-          break;
-        case 2:
-          setBrightness(80); // aiming for amber
-          break;
-        case 3:
-          setBrightness(255); // aiming for amber
-          break;
-        case 4:
-          setBrightness(190); // Red
-          break;
-        case 5:
-          setBrightness(190); // Green
-          break;
-        case 6:
-          setBrightness(190); // Blue
-          break;
-        case 7:
-          setBrightness(50); // White
-          break;
-        case 8:
-          setBrightness(255); // White
-          break;
+    if (newBrightnessState == LOW) {      // Yes, still low
+      if (brightness < 255) {
+        brightness += 1;
+      } else {
+        brightness = 1;
       }
+      setBrightness(brightness);
     }
   }
-
-  oldBrightnessState = newBrightnessState;
 }
 
 void watchColorButton () {
