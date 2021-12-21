@@ -25,9 +25,10 @@ Adafruit_NeoPixel strip(PIXEL_COUNT, PIXEL_PIN, NEO_GRB + NEO_KHZ800);
 //   NEO_RGBW    Pixels are wired for RGBW bitstream (NeoPixel RGBW products)
 
 boolean isOn = true;
+boolean shouldColorCycle   = false;
 boolean oldColorState      = HIGH;
 boolean oldBrightnessState = HIGH;
-boolean oldComboState [2] = { HIGH, HIGH };
+boolean oldComboState [2]  = { HIGH, HIGH };
 
 uint8_t brightness         = 25; // Invisible below 25 (max = 255)
 uint16_t hue               = 0;
@@ -42,38 +43,12 @@ void setup() {
 }
 
 void loop() {
+
   watchColorButton();
   watchBrightnessButton();
   watchComboPress();
-}
-
-void watchComboPress () {
-  boolean newComboState [2] = { digitalRead(BRIGHTNESS_BTN_PIN), digitalRead(COLOR_BTN_PIN) };
-
-  if(
-      (newComboState[0] == LOW) &&
-      (newComboState[1] == LOW) &&
-      (oldComboState[0] == HIGH) &&
-      (oldComboState[1] == HIGH )
-    ) {
-    
-    delay(60);
-
-    newComboState[0] = digitalRead(BRIGHTNESS_BTN_PIN);
-    newComboState[1] = digitalRead(COLOR_BTN_PIN);
-
-    if(newComboState[0] == LOW && newComboState[1] == LOW) {
-      if(isOn) {
-        isOn = false;
-      } else {
-        isOn = true;
-      }
-        setHue();
-    }
-
-  }
-  oldComboState[0] = newComboState[0];
-  oldComboState[1] = newComboState[1];
+  colorCycle();
+  
 }
 
 void watchBrightnessButton () {
@@ -119,6 +94,34 @@ void watchColorButton () {
   }
 }
 
+void watchComboPress () {
+  boolean newComboState [2] = { digitalRead(BRIGHTNESS_BTN_PIN), digitalRead(COLOR_BTN_PIN) };
+
+  if(
+      (newComboState[0] == LOW) &&
+      (newComboState[1] == LOW) &&
+      (oldComboState[0] == HIGH) &&
+      (oldComboState[1] == HIGH )
+    ) {
+    
+    delay(60);
+
+    newComboState[0] = digitalRead(BRIGHTNESS_BTN_PIN);
+    newComboState[1] = digitalRead(COLOR_BTN_PIN);
+
+    if(newComboState[0] == LOW && newComboState[1] == LOW) {
+        if(shouldColorCycle) {
+            shouldColorCycle = false;
+        } else {
+            shouldColorCycle = true;
+        }
+    }
+
+  }
+  oldComboState[0] = newComboState[0];
+  oldComboState[1] = newComboState[1];
+}
+
 void setHue () {
   if(!isOn) {
     brightness = 0;
@@ -134,31 +137,25 @@ void setHue () {
 
 
 // The below seem to block use of the button...
+unsigned long lastCycleMillis = 0;
+void colorCycle() {
+    int delay = 30;
+    unsigned long timeSinceLastCycle = millis() - lastCycleMillis;
+    
+    if(shouldColorCycle && timeSinceLastCycle > delay) {
+        if(hue < 65536) {
+            hue += 256;
+        } else {
+            hue = 0;
+        }
+        setHue();
+        lastCycleMillis = millis();
+    }
 
-//void colorCycle(int wait, uint8_t brightness) {
+
 //  for(long color = 0; color < 5*65536; color += 256) {
-//    strip.rainbow(color, 9999, 255, brightness, true);
+//    strip.rainbow(color, 1, 255, brightness, true);
 //    strip.show();
 //    delay(wait);
 //  }  
-//}
-
-//// Rainbow cycle along whole strip. Pass delay time (in ms) between frames.
-//void rainbow(int wait) {
-//  // Hue of first pixel runs 5 complete loops through the color wheel.
-//  // Color wheel has a range of 65536 but it's OK if we roll over, so
-//  // just count from 0 to 5*65536. Adding 256 to firstPixelHue each time
-//  // means we'll make 5*65536/256 = 1280 passes through this loop:
-//  for(long firstPixelHue = 0; firstPixelHue < 5*65536; firstPixelHue += 256) {
-//    // strip.rainbow() can take a single argument (first pixel hue) or
-//    // optionally a few extras: number of rainbow repetitions (default 1),
-//    // saturation and value (brightness) (both 0-255, similar to the
-//    // ColorHSV() function, default 255), and a true/false flag for whether
-//    // to apply gamma correction to provide 'truer' colors (default true).
-//    strip.rainbow(firstPixelHue);
-//    // Above line is equivalent to:
-//    // strip.rainbow(firstPixelHue, 1, 255, 255, true);
-//    strip.show(); // Update strip with new contents
-//    delay(wait);  // Pause for a moment
-//  }
-//}
+}
