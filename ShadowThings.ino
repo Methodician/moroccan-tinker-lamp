@@ -24,13 +24,14 @@ Adafruit_NeoPixel strip(PIXEL_COUNT, PIXEL_PIN, NEO_GRB + NEO_KHZ800);
 //   NEO_RGB     Pixels are wired for RGB bitstream (v1 FLORA pixels, not v2)
 //   NEO_RGBW    Pixels are wired for RGBW bitstream (NeoPixel RGBW products)
 
-boolean isOn = true;
-boolean shouldColorCycle   = false;
+int animationState  = 0;
+int maxAnimationState      = 3;
+boolean isOn               = true;
 boolean oldColorState      = HIGH;
 boolean oldBrightnessState = HIGH;
 boolean oldComboState [2]  = { HIGH, HIGH };
 
-uint8_t brightness         = 25; // Invisible below 25 (max = 255)
+uint8_t brightness         = 250; // Invisible below 25 (max = 255)
 uint16_t hue               = 0;
 
 
@@ -47,7 +48,22 @@ void loop() {
   watchColorButton();
   watchBrightnessButton();
   watchComboPress();
-  colorCycle();
+
+  switch(animationState) {
+        case 0 :
+            break;
+        case 1 :
+            colorSweep();
+            break;
+        case 2 :
+            flash();
+            break;
+        case 3 :
+            colorCycleFlash();
+            break;
+        default :
+            break;
+  }
   
 }
 
@@ -110,14 +126,15 @@ void watchComboPress () {
     newComboState[1] = digitalRead(COLOR_BTN_PIN);
 
     if(newComboState[0] == LOW && newComboState[1] == LOW) {
-        if(shouldColorCycle) {
-            shouldColorCycle = false;
+        if(animationState < maxAnimationState) {
+            animationState += 1;
         } else {
-            shouldColorCycle = true;
+            animationState = 0;
         }
+        strip.setBrightness(brightness);
     }
-
   }
+
   oldComboState[0] = newComboState[0];
   oldComboState[1] = newComboState[1];
 }
@@ -138,11 +155,11 @@ void setHue () {
 
 // The below seem to block use of the button...
 unsigned long lastCycleMillis = 0;
-void colorCycle() {
+void colorSweep() {
     int delay = 30;
     unsigned long timeSinceLastCycle = millis() - lastCycleMillis;
     
-    if(shouldColorCycle && timeSinceLastCycle > delay) {
+    if(timeSinceLastCycle > delay) {
         if(hue < 65536) {
             hue += 256;
         } else {
@@ -151,11 +168,57 @@ void colorCycle() {
         setHue();
         lastCycleMillis = millis();
     }
+}
 
+int flashState = 0;
+void flash() {
+    int flashInterval = 1000;
+    int flashDuration = 50;
+    unsigned long currentMillis = millis();
+    unsigned long timeSinceLastCycle = currentMillis - lastCycleMillis;
 
-//  for(long color = 0; color < 5*65536; color += 256) {
-//    strip.rainbow(color, 1, 255, brightness, true);
-//    strip.show();
-//    delay(wait);
-//  }  
+    // This needs to be BEFORE the other condition because
+    // flashState was being set to 1 before checking other condition
+    // Hard to make sense because intuitively, the lastCycleMillis compare
+    // should have kept things syned up.
+    if(flashState == 1 && timeSinceLastCycle >= flashDuration) {
+        strip.setBrightness(0);
+        strip.show();
+        flashState = 0;
+    }
+
+    if(timeSinceLastCycle >= flashInterval) {
+        lastCycleMillis = currentMillis;
+        flashState = 1;
+        strip.setBrightness(brightness);
+        setHue();
+    }
+}
+
+void colorCycleFlash() {
+    int flashInterval = 1000;
+    int flashDuration = 50;
+    unsigned long timeSinceLastCycle = millis() - lastCycleMillis;
+    
+    // This needs to be BEFORE the other condition because
+    // flashState was being set to 1 before checking other condition
+    // Hard to make sense because intuitively, the lastCycleMillis compare
+    // should have kept things syned up.
+    if(flashState == 1 && timeSinceLastCycle > flashDuration) {
+        strip.setBrightness(0);
+        strip.show();
+        flashState = 0;
+    }
+
+    if(timeSinceLastCycle > flashInterval) {
+        if(hue < 65536) {
+            hue += 5120;
+        } else {
+            hue = 0;
+        }
+        strip.setBrightness(brightness);
+        setHue();
+        flashState = 1;
+        lastCycleMillis = millis();
+    }    
 }
